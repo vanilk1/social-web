@@ -1,0 +1,191 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% block title %}Стрічка новин{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <div class="col-lg-3 d-none d-lg-block">
+    <div class="sidebar-card d-flex align-items-center gap-3">
+      <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=48&background=6c63ff&color=fff{% endif %}"
+        class="rounded-circle flex-shrink-0" width="48" height="48" alt="">
+      <div>
+        <div class="fw-semibold" style="font-size:.95rem">{{ user.get_full_name|default:user.username }}</div>
+        <a href="{% url 'accounts:profile' user.pk %}" class="text-decoration-none" style="font-size:.8rem;color:var(--primary)">Мій профіль</a>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <h6 style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Меню</h6>
+      {% for href, icon, color, label in sidebar_links %}
+      <a href="{{ href }}" class="d-flex align-items-center gap-2 py-2 text-decoration-none text-dark rounded-2"
+         style="padding:.4rem .3rem;transition:background .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+        <span style="width:36px;height:36px;border-radius:10px;background:{{ color }};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">
+          <i class="bi bi-{{ icon }}"></i>
+        </span>
+        <span style="font-size:.92rem;font-weight:500">{{ label }}</span>
+      </a>
+      {% endfor %}
+      <a href="/" class="d-flex align-items-center gap-2 py-2 text-decoration-none text-dark rounded-2">
+        <span style="width:36px;height:36px;border-radius:10px;background:var(--primary-lt);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1rem;flex-shrink:0"><i class="bi bi-house-door-fill"></i></span>
+        <span style="font-size:.92rem;font-weight:500">Стрічка</span>
+      </a>
+      <a href="/groups/" class="d-flex align-items-center gap-2 py-2 text-decoration-none text-dark rounded-2">
+        <span style="width:36px;height:36px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:1rem;flex-shrink:0"><i class="bi bi-people-fill"></i></span>
+        <span style="font-size:.92rem;font-weight:500">Групи</span>
+      </a>
+      <a href="/chat/" class="d-flex align-items-center gap-2 py-2 text-decoration-none text-dark rounded-2">
+        <span style="width:36px;height:36px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;color:#16a34a;font-size:1rem;flex-shrink:0"><i class="bi bi-chat-dots-fill"></i></span>
+        <span style="font-size:.92rem;font-weight:500">Повідомлення</span>
+      </a>
+      <a href="/notifications/" class="d-flex align-items-center gap-2 py-2 text-decoration-none text-dark rounded-2">
+        <span style="width:36px;height:36px;border-radius:10px;background:#fce7f3;display:flex;align-items:center;justify-content:center;color:#db2777;font-size:1rem;flex-shrink:0"><i class="bi bi-bell-fill"></i></span>
+        <span style="font-size:.92rem;font-weight:500">Сповіщення</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-lg-6 col-md-10 mx-auto mx-lg-0">
+
+    <div class="post-compose mb-3">
+      <div class="d-flex gap-3 align-items-start">
+        <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=42&background=6c63ff&color=fff{% endif %}"
+          class="rounded-circle flex-shrink-0" width="42" height="42" alt="">
+        <div class="flex-grow-1">
+          <form method="post" action="{% url 'social:create_post' %}" enctype="multipart/form-data" id="post-form">
+            {% csrf_token %}
+
+            <textarea name="text" rows="2" id="post-text"
+              placeholder="Що у вас нового, {{ user.get_short_name|default:user.username }}?"
+              style="border:none;background:var(--bg);border-radius:12px;resize:none;width:100%;padding:.75rem 1rem;font-size:.97rem;outline:none;transition:height .2s"
+              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+            ></textarea>
+
+            <div id="media-fields" style="display:none" class="mt-2">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="fw-semibold small" style="color:var(--muted)">Фото</label>
+                  <input type="file" name="image" class="form-control form-control-sm" accept="image/*">
+                </div>
+                <div class="col-6">
+                  <label class="fw-semibold small" style="color:var(--muted)">Відео</label>
+                  <input type="file" name="video" class="form-control form-control-sm" accept="video/*">
+                </div>
+                <div class="col-12">
+                  <label class="fw-semibold small" style="color:var(--muted)">Посилання</label>
+                  <input type="url" name="link" class="form-control form-control-sm" placeholder="https://...">
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2" style="border-top:1px solid var(--border)">
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-sm px-2 py-1" style="border-radius:8px;color:var(--muted);font-size:.82rem"
+                        onclick="document.getElementById('media-fields').style.display = document.getElementById('media-fields').style.display==='none'?'block':'none'">
+                  <i class="bi bi-image me-1" style="color:#22c55e"></i>Фото/Відео
+                </button>
+                <button type="button" class="btn btn-sm px-2 py-1" style="border-radius:8px;color:var(--muted);font-size:.82rem">
+                  <i class="bi bi-emoji-smile me-1" style="color:#f59e0b"></i>Настрій
+                </button>
+                <button type="button" class="btn btn-sm px-2 py-1" style="border-radius:8px;color:var(--muted);font-size:.82rem">
+                  <i class="bi bi-geo-alt me-1" style="color:#ef4444"></i>Місце
+                </button>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm px-4" style="border-radius:10px;font-weight:600">
+                Опублікувати
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-3 p-1" style="background:var(--surface);border-radius:12px;border:1px solid var(--border)">
+      <a href="?tab=all"
+         class="flex-fill text-center py-2 text-decoration-none fw-semibold small rounded-3"
+         style="{% if tab == 'all' %}background:var(--primary);color:#fff{% else %}color:var(--muted){% endif %}">
+        <i class="bi bi-grid me-1"></i>Всі
+      </a>
+      <a href="?tab=friends"
+         class="flex-fill text-center py-2 text-decoration-none fw-semibold small rounded-3"
+         style="{% if tab == 'friends' %}background:var(--primary);color:#fff{% else %}color:var(--muted){% endif %}">
+        <i class="bi bi-people me-1"></i>Друзі
+        {% if friends_count %}<span class="ms-1 badge" style="background:{% if tab == 'friends' %}rgba(255,255,255,.3){% else %}var(--primary-lt){% endif %};color:{% if tab == 'friends' %}#fff{% else %}var(--primary){% endif %}">{{ friends_count }}</span>{% endif %}
+      </a>
+      <a href="?tab=following"
+         class="flex-fill text-center py-2 text-decoration-none fw-semibold small rounded-3"
+         style="{% if tab == 'following' %}background:var(--primary);color:#fff{% else %}color:var(--muted){% endif %}">
+        <i class="bi bi-bell me-1"></i>Підписки
+      </a>
+    </div>
+
+    {% for post in posts %}
+        {% include "social/post_card.html" %}
+
+    {% empty %}
+      <div class="post-card text-center py-5">
+        <i class="bi bi-stars" style="font-size:3rem;color:var(--primary)"></i>
+        <p class="mt-3 fw-semibold">
+          {% if tab == 'friends' %}У ваших друзів поки немає публікацій
+          {% elif tab == 'following' %}Підписки поки нічого не публікували
+          {% else %}Стрічка порожня — опублікуйте щось першим!{% endif %}
+        </p>
+        {% if tab != 'all' %}
+        <a href="?tab=all" class="btn btn-outline-primary btn-sm mt-2" style="border-radius:10px">Переглянути всі</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center gap-2 my-3">
+      {% if page_obj.has_previous %}
+        <a href="?tab={{ tab }}&page={{ page_obj.previous_page_number }}"
+           class="btn btn-outline-primary btn-sm px-3" style="border-radius:10px">
+          <i class="bi bi-chevron-left"></i> Назад
+        </a>
+      {% endif %}
+      <span class="btn btn-sm px-3" style="background:var(--bg);border-radius:10px;cursor:default">
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+        <a href="?tab={{ tab }}&page={{ page_obj.next_page_number }}"
+           class="btn btn-outline-primary btn-sm px-3" style="border-radius:10px">
+          Далі <i class="bi bi-chevron-right"></i>
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="col-lg-3 d-none d-lg-block">
+    <div class="sidebar-card">
+      <h6 style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Онлайн друзі</h6>
+      <p class="text-muted small mb-0">Поки нікого немає онлайн</p>
+    </div>
+    <div class="sidebar-card">
+      <h6 style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px">
+        <i class="bi bi-fire me-1" style="color:#ef4444"></i>Популярне сьогодні
+      </h6>
+      <p class="text-muted small mb-0">Скоро тут з'являться тренди</p>
+    </div>
+    <div class="sidebar-card">
+      <h6 style="color:var(--muted);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Можливо знайомі</h6>
+      <p class="text-muted small mb-0">Рекомендації незабаром</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Авторозширення textarea
+const ta = document.getElementById("post-text");
+if (ta) {
+  ta.addEventListener("focus", () => {
+    ta.style.minHeight = "80px";
+  });
+}
+</script>
+{% endblock %}

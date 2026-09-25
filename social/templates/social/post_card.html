@@ -1,0 +1,152 @@
+{% load static %}
+
+<div class="post-card" id="post-{{ post.pk }}">
+
+  <div class="post-header d-flex align-items-center gap-3">
+    <a href="{% url 'accounts:profile' post.author.pk %}">
+      <img
+        src="{% if post.author.avatar %}{{ post.author.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ post.author.username }}&size=46&background=6c63ff&color=fff{% endif %}"
+        class="rounded-circle flex-shrink-0" width="46" height="46" alt=""
+      >
+    </a>
+    <div class="flex-grow-1">
+      <a href="{% url 'accounts:profile' post.author.pk %}" class="fw-semibold text-decoration-none" style="color:var(--text)">
+        {{ post.author.get_full_name|default:post.author.username }}
+      </a>
+      <div style="font-size:.76rem;color:var(--muted)">
+        <i class="bi bi-clock me-1"></i>{{ post.created_at|timesince }} тому
+        <span class="ms-2"><i class="bi bi-globe2"></i></span>
+      </div>
+    </div>
+
+    {% if user == post.author or user.is_admin %}
+    <div class="dropdown">
+      <button class="tbtn" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+      <ul class="dropdown-menu dropdown-menu-end" style="min-width:180px">
+        <li>
+          <form method="post" action="{% url 'social:delete_post' post.pk %}"
+                onsubmit="return confirm('Видалити публікацію?')">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item text-danger">
+              <i class="bi bi-trash me-2"></i>Видалити
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if post.text %}
+  <div class="post-body">
+    <p class="mb-0" style="font-size:.97rem;line-height:1.6;white-space:pre-line">{{ post.text }}</p>
+  </div>
+  {% endif %}
+
+  {% if post.link %}
+  <div class="px-3 pb-2">
+    <a href="{{ post.link }}" target="_blank" rel="noopener"
+       class="d-flex align-items-center gap-2 p-2 text-decoration-none"
+       style="background:var(--bg);border-radius:10px;font-size:.82rem;color:var(--primary);border:1px solid var(--border)">
+      <i class="bi bi-link-45deg fs-5"></i>
+      <span class="text-truncate">{{ post.link }}</span>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if post.image %}
+  <img src="{{ post.image.url }}" class="post-img" alt="Зображення до поста"
+       style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#imgModal{{ post.pk }}">
+
+  <div class="modal fade" id="imgModal{{ post.pk }}" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content" style="background:transparent;border:none">
+        <img src="{{ post.image.url }}" class="img-fluid rounded" alt="">
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="px-3 py-2 d-flex align-items-center justify-content-between"
+       style="font-size:.82rem;color:var(--muted);border-top:1px solid var(--border)">
+    <span>
+      {% with cnt=post.likes.count %}
+      {% if cnt %}
+      <span style="display:inline-flex;align-items:center;gap:.3rem">
+        <span style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#f97316);display:inline-flex;align-items:center;justify-content:center">
+          <i class="bi bi-heart-fill text-white" style="font-size:.6rem"></i>
+        </span>
+        <span id="like-count-{{ post.pk }}">{{ cnt }}</span>
+      </span>
+      {% endif %}
+      {% endwith %}
+    </span>
+    <span class="d-flex gap-3">
+      {% with cc=post.comments.count %}{% if cc %}<span>{{ cc }} коментарів</span>{% endif %}{% endwith %}
+      {% with sc=post.shares.count %}{% if sc %}<span>{{ sc }} поширень</span>{% endif %}{% endwith %}
+    </span>
+  </div>
+
+  <div class="post-actions">
+
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'social:like_post' post.pk %}"
+          class="like-form" data-post-id="{{ post.pk }}" style="flex:1;display:contents">
+      {% csrf_token %}
+      <button type="submit"
+        class="post-action-btn like-btn {% if post.pk in liked_posts %}liked{% endif %}"
+        data-liked="{% if post.pk in liked_posts %}true{% else %}false{% endif %}">
+        <i class="bi bi-heart{% if post.pk in liked_posts %}-fill{% endif %}"></i>
+        Подобається
+      </button>
+    </form>
+    {% endif %}
+
+    <button class="post-action-btn"
+            data-bs-toggle="collapse" data-bs-target="#comments-{{ post.pk }}">
+      <i class="bi bi-chat-dots"></i> Коментувати
+    </button>
+
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'social:share_post' post.pk %}"
+          class="share-form" data-post-id="{{ post.pk }}" style="flex:1;display:contents">
+      {% csrf_token %}
+      <button type="submit" class="post-action-btn share-btn">
+        <i class="bi bi-share"></i> Поділитись
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="collapse" id="comments-{{ post.pk }}">
+    <div class="comments-section">
+
+      <ul class="list-unstyled mb-3" id="comments-list-{{ post.pk }}">
+        {% for comment in post.comments.all %}
+          {% include "social/comment_item.html" with comment=comment %}
+        {% empty %}
+          <li class="text-center text-muted small py-2" id="no-comments-{{ post.pk }}">
+            Будьте першим, хто прокоментує
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'social:add_comment' post.pk %}"
+            class="comment-form" data-post-id="{{ post.pk }}">
+        {% csrf_token %}
+        <div class="comment-input-row">
+          <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=32&background=6c63ff&color=fff{% endif %}"
+               class="rounded-circle flex-shrink-0" width="32" height="32" alt="">
+          <input type="text" name="text" placeholder="Написати коментар..." autocomplete="off">
+          <button type="submit" class="comment-send-btn">
+            <i class="bi bi-send-fill" style="font-size:.8rem"></i>
+          </button>
+        </div>
+      </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,68 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% block title %}Групи{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <div class="col-12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div>
+        <h4 class="fw-bold mb-0">Групи та спільноти</h4>
+        <p class="text-muted small mb-0">Знаходьте людей зі спільними інтересами</p>
+      </div>
+      {% if user.is_authenticated %}
+      <a href="{% url 'groups_app:create' %}" class="btn btn-primary px-4" style="border-radius:10px;font-weight:600">
+        <i class="bi bi-plus-lg me-1"></i>Створити групу
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ q }}" placeholder="Пошук груп..."
+             class="form-control" style="border:2px solid var(--border);border-radius:12px;max-width:400px">
+      <button class="btn btn-primary" style="border-radius:12px"><i class="bi bi-search"></i></button>
+      {% if q %}<a href="{% url 'groups_app:list' %}" class="btn" style="border-radius:12px;background:var(--bg)">✕</a>{% endif %}
+    </form>
+  </div>
+
+  {% if my_groups %}
+  <div class="col-12">
+    <h6 class="fw-bold mb-3" style="color:var(--muted);text-transform:uppercase;font-size:.78rem;letter-spacing:.5px">
+      <i class="bi bi-person-check me-1"></i>Мої групи
+    </h6>
+    <div class="row g-3">
+      {% for group in my_groups %}
+      <div class="col-md-4 col-sm-6">
+        {% include "groups_app/group_card.html" with group=group joined=True %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="col-12">
+    <h6 class="fw-bold mb-3" style="color:var(--muted);text-transform:uppercase;font-size:.78rem;letter-spacing:.5px">
+      <i class="bi bi-globe2 me-1"></i>{% if q %}Результати пошуку{% else %}Популярні групи{% endif %}
+    </h6>
+    {% if other %}
+    <div class="row g-3">
+      {% for group in other %}
+      <div class="col-md-4 col-sm-6">
+        {% include "groups_app/group_card.html" with group=group joined=False %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card text-center py-5" style="border:2px dashed var(--border)">
+      <i class="bi bi-people" style="font-size:3rem;color:var(--primary)"></i>
+      <p class="mt-3 fw-semibold">Групи не знайдені</p>
+      {% if q %}<p class="text-muted small">Спробуйте інший запит або <a href="{% url 'groups_app:create' %}">створіть нову групу</a></p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

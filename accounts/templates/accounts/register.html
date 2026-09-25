@@ -1,0 +1,133 @@
+{% extends "accounts/base.html" %}
+{% block title %}Реєстрація{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: linear-gradient(135deg, #6c63ff 0%, #a78bfa 100%) !important; min-height: 100vh; }
+  .auth-wrap { min-height: calc(100vh - 68px); display: flex; align-items: center; justify-content: center; padding: 2rem 0; }
+  .auth-card { background: #fff; border-radius: 20px; box-shadow: 0 24px 64px rgba(108,99,255,.25); padding: 2.5rem; width: 100%; max-width: 500px; }
+  .auth-logo { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(135deg, #6c63ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .auth-field { border: 2px solid var(--border); border-radius: 12px; padding: .7rem 1rem; font-size: .95rem; width: 100%; outline: none; transition: border-color .2s; }
+  .auth-field:focus { border-color: var(--primary); }
+  .auth-field.is-invalid { border-color: #ef4444; }
+  .auth-btn { width: 100%; padding: .8rem; border-radius: 12px; border: none; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, #6c63ff, #a78bfa); color: #fff; cursor: pointer; transition: opacity .2s; }
+  .auth-btn:hover { opacity: .9; }
+  .field-error { color: #ef4444; font-size: .8rem; margin-top: .3rem; }
+  .strength-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: .4rem; overflow: hidden; }
+  .strength-fill { height: 100%; border-radius: 2px; transition: width .3s, background .3s; width: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <div class="auth-logo">СМ</div>
+      <p style="color:var(--muted);font-size:.9rem;margin-top:.25rem">Швидка та безкоштовна реєстрація</p>
+    </div>
+
+    <form method="post" action="{% url 'auth:register' %}" novalidate>
+      {% csrf_token %}
+
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold small">Ім'я</label>
+          <input type="text" name="first_name" value="{{ data.first_name|default:'' }}"
+                 class="auth-field" placeholder="Іван">
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold small">Прізвище</label>
+          <input type="text" name="last_name" value="{{ data.last_name|default:'' }}"
+                 class="auth-field" placeholder="Іваненко">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">Ім'я користувача <span style="color:#ef4444">*</span></label>
+        <input type="text" name="username" value="{{ data.username|default:'' }}"
+               class="auth-field {% if errors.username %}is-invalid{% endif %}"
+               placeholder="myusername" autofocus required>
+        {% if errors.username %}<div class="field-error"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.username }}</div>{% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">Email</label>
+        <input type="email" name="email" value="{{ data.email|default:'' }}"
+               class="auth-field {% if errors.email %}is-invalid{% endif %}"
+               placeholder="email@example.com">
+        {% if errors.email %}<div class="field-error"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.email }}</div>{% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">Пароль <span style="color:#ef4444">*</span></label>
+        <div class="position-relative">
+          <input type="password" name="password1" id="pass1"
+                 class="auth-field {% if errors.password1 %}is-invalid{% endif %}"
+                 placeholder="Мінімум 8 символів" required oninput="checkStrength(this.value)">
+          <button type="button" onclick="togglePass('pass1','eye1')"
+                  style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--muted);cursor:pointer">
+            <i class="bi bi-eye" id="eye1"></i>
+          </button>
+        </div>
+        <div class="strength-bar mt-2"><div class="strength-fill" id="strength-fill"></div></div>
+        <div id="strength-label" style="font-size:.75rem;color:var(--muted);margin-top:.2rem"></div>
+        {% if errors.password1 %}<div class="field-error"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.password1 }}</div>{% endif %}
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label fw-semibold small">Повторіть пароль <span style="color:#ef4444">*</span></label>
+        <div class="position-relative">
+          <input type="password" name="password2" id="pass2"
+                 class="auth-field {% if errors.password2 %}is-invalid{% endif %}"
+                 placeholder="••••••••" required>
+          <button type="button" onclick="togglePass('pass2','eye2')"
+                  style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);border:none;background:none;color:var(--muted);cursor:pointer">
+            <i class="bi bi-eye" id="eye2"></i>
+          </button>
+        </div>
+        {% if errors.password2 %}<div class="field-error"><i class="bi bi-exclamation-circle me-1"></i>{{ errors.password2 }}</div>{% endif %}
+      </div>
+
+      <button type="submit" class="auth-btn">Зареєструватись</button>
+
+      <div style="text-align:center;margin-top:1.25rem">
+        <span style="color:var(--muted);font-size:.9rem">Вже є акаунт? </span>
+        <a href="{% url 'auth:login' %}" class="fw-bold text-decoration-none" style="color:var(--primary)">Увійти</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePass(id, iconId) {
+  const f = document.getElementById(id);
+  const i = document.getElementById(iconId);
+  f.type = f.type === 'password' ? 'text' : 'password';
+  i.className = f.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+function checkStrength(val) {
+  const fill  = document.getElementById('strength-fill');
+  const label = document.getElementById('strength-label');
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { pct: '0%',   color: '',        text: '' },
+    { pct: '25%',  color: '#ef4444', text: 'Слабкий' },
+    { pct: '50%',  color: '#f59e0b', text: 'Середній' },
+    { pct: '75%',  color: '#3b82f6', text: 'Хороший' },
+    { pct: '100%', color: '#22c55e', text: 'Відмінний' },
+  ];
+  const l = levels[score];
+  fill.style.width    = l.pct;
+  fill.style.background = l.color;
+  label.textContent   = l.text;
+  label.style.color   = l.color;
+}
+</script>
+{% endblock %}

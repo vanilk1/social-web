@@ -1,0 +1,171 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <div class="col-lg-4">
+    <div class="card overflow-hidden">
+
+      <div class="position-relative">
+        {% if profile_user.cover_photo %}
+          <img src="{{ profile_user.cover_photo.url }}" class="cover-photo" alt="">
+        {% else %}
+          <div class="cover-photo" style="background:linear-gradient(135deg,#6c63ff,#a78bfa)"></div>
+        {% endif %}
+        {% if is_own_profile %}
+        <button class="tbtn position-absolute bottom-0 end-0 m-2"
+                data-bs-toggle="modal" data-bs-target="#coverModal"
+                style="background:rgba(255,255,255,.85)">
+          <i class="bi bi-camera-fill" style="font-size:.9rem"></i>
+        </button>
+        {% endif %}
+      </div>
+
+      <div class="card-body text-center" style="padding-top:.5rem">
+
+        <div class="position-relative d-inline-block">
+          <img
+            src="{% if profile_user.avatar %}{{ profile_user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ profile_user.username }}&size=110&background=6c63ff&color=fff{% endif %}"
+            class="avatar-lg d-block mx-auto" alt=""
+          >
+          {% if is_own_profile %}
+          <button class="position-absolute bottom-0 end-0 border-0 rounded-circle d-flex align-items-center justify-content-center"
+                  style="width:28px;height:28px;background:var(--primary);color:#fff;cursor:pointer"
+                  data-bs-toggle="modal" data-bs-target="#avatarModal">
+            <i class="bi bi-camera-fill" style="font-size:.65rem"></i>
+          </button>
+          {% endif %}
+        </div>
+
+        <h5 class="mt-2 mb-0 fw-bold">{{ profile_user.get_full_name|default:profile_user.username }}</h5>
+        <p style="color:var(--muted);font-size:.82rem">@{{ profile_user.username }}</p>
+
+        <div class="row g-0 text-center py-2 mb-2" style="border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+          <div class="col">
+            <div class="fw-bold">{{ posts.count }}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Постів</div>
+          </div>
+          <div class="col" style="border-left:1px solid var(--border);border-right:1px solid var(--border)">
+            <div class="fw-bold">{{ friends_count }}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Друзів</div>
+          </div>
+          <div class="col">
+            <div class="fw-bold">{{ followers_count }}</div>
+            <div style="font-size:.75rem;color:var(--muted)">Підписників</div>
+          </div>
+        </div>
+
+        {% if profile_user.bio %}
+        <p class="small mb-2" style="color:var(--muted)">{{ profile_user.bio }}</p>
+        {% endif %}
+        {% if profile_user.city %}
+        <p class="small mb-1" style="color:var(--muted)"><i class="bi bi-geo-alt me-1" style="color:var(--primary)"></i>{{ profile_user.city }}</p>
+        {% endif %}
+        {% if profile_user.birth_date %}
+        <p class="small mb-2" style="color:var(--muted)"><i class="bi bi-cake2 me-1" style="color:var(--primary)"></i>{{ profile_user.birth_date|date:"d.m.Y" }}</p>
+        {% endif %}
+
+        {% if is_own_profile %}
+          <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-primary w-100" style="border-radius:10px">
+            <i class="bi bi-pencil me-1"></i>Редагувати профіль
+          </a>
+        {% elif user.is_authenticated %}
+          <div class="d-grid gap-2">
+            {% if friendship_status == "accepted" %}
+              <button class="btn w-100" style="background:var(--primary-lt);color:var(--primary);border-radius:10px;font-weight:600;border:none">
+                <i class="bi bi-people-fill me-1"></i>Друзі
+              </button>
+            {% elif friendship_status == "pending" %}
+              <button class="btn w-100 disabled" style="border-radius:10px">
+                <i class="bi bi-clock me-1"></i>Запит надіслано
+              </button>
+            {% else %}
+              <form method="post" action="{% url 'accounts:send_friend_request' profile_user.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary w-100" style="border-radius:10px">
+                  <i class="bi bi-person-plus me-1"></i>Додати в друзі
+                </button>
+              </form>
+            {% endif %}
+            <form method="post" action="{% url 'accounts:toggle_follow' profile_user.pk %}">
+              {% csrf_token %}
+              <button class="btn w-100" style="border-radius:10px;{% if is_following %}background:var(--bg);{% else %}background:var(--primary-lt);color:var(--primary);{% endif %}border:none;font-weight:600">
+                {% if is_following %}<i class="bi bi-bell-slash me-1"></i>Відписатись
+                {% else %}<i class="bi bi-bell me-1"></i>Підписатись{% endif %}
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+
+    {% if is_own_profile %}
+      {% with pending=user.received_friend_requests.all %}
+        {% if pending %}
+        <div class="card mb-3">
+          <div class="card-header fw-semibold"><i class="bi bi-person-plus me-2" style="color:var(--primary)"></i>Запити в друзі</div>
+          {% for req in pending %}{% if req.status == "pending" %}
+          <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom">
+            <img src="{% if req.from_user.avatar %}{{ req.from_user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ req.from_user.username }}&size=40&background=6c63ff&color=fff{% endif %}"
+                 class="rounded-circle" width="40" height="40" alt="">
+            <a href="{% url 'accounts:profile' req.from_user.pk %}" class="fw-semibold text-decoration-none text-dark flex-grow-1">
+              {{ req.from_user.get_full_name|default:req.from_user.username }}
+            </a>
+            <div class="d-flex gap-2">
+              <form method="post" action="{% url 'accounts:respond_friend_request' req.pk %}">
+                {% csrf_token %}<button name="action" value="accept" class="btn btn-primary btn-sm" style="border-radius:8px">Прийняти</button>
+              </form>
+              <form method="post" action="{% url 'accounts:respond_friend_request' req.pk %}">
+                {% csrf_token %}<button name="action" value="decline" class="btn btn-sm" style="border-radius:8px;background:var(--bg)">Відхилити</button>
+              </form>
+            </div>
+          </div>
+          {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+    {% endif %}
+
+    {% for post in posts %}
+      {% include "social/post_card.html" %}
+    {% empty %}
+      <div class="card text-center py-5">
+        <i class="bi bi-journal-x" style="font-size:3rem;color:var(--primary)"></i>
+        <p class="mt-3 fw-semibold">Публікацій ще немає</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if is_own_profile %}
+<div class="modal fade" id="avatarModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="border-radius:var(--radius)">
+      <div class="modal-header border-0 pb-0"><h6 class="modal-title fw-bold">Змінити аватар</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post" action="{% url 'accounts:update_avatar' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body"><input type="file" name="avatar" class="form-control" accept="image/*" required></div>
+        <div class="modal-footer border-0 pt-0"><button class="btn btn-primary w-100" style="border-radius:10px">Зберегти</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="coverModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:var(--radius)">
+      <div class="modal-header border-0 pb-0"><h6 class="modal-title fw-bold">Змінити обкладинку</h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="post" action="{% url 'accounts:update_cover' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body"><input type="file" name="cover_photo" class="form-control" accept="image/*" required></div>
+        <div class="modal-footer border-0 pt-0"><button class="btn btn-primary w-100" style="border-radius:10px">Зберегти</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

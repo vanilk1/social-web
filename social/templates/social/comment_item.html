@@ -1,0 +1,42 @@
+{% load static %}
+<li class="comment-item" id="comment-{{ comment.pk }}">
+  <img
+    src="{% if comment.author.avatar %}{{ comment.author.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ comment.author.username }}&size=32&background=6c63ff&color=fff{% endif %}"
+    class="rounded-circle flex-shrink-0" width="32" height="32" alt=""
+  >
+  <div class="flex-grow-1">
+    <div class="comment-bubble">
+      <a href="{% url 'accounts:profile' comment.author.pk %}"
+         class="fw-semibold text-decoration-none d-block" style="font-size:.83rem;color:var(--text)">
+        {{ comment.author.get_full_name|default:comment.author.username }}
+      </a>
+      <p class="mb-0" style="font-size:.88rem">{{ comment.text }}</p>
+    </div>
+    <div class="d-flex gap-3 mt-1 align-items-center" style="padding-left:.2rem">
+      <span style="font-size:.72rem;color:var(--muted)">{{ comment.created_at|timesince }} тому</span>
+
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'social:like_comment' comment.pk %}"
+            class="like-comment-form" data-comment-id="{{ comment.pk }}">
+        {% csrf_token %}
+        <button type="submit"
+          class="like-comment-btn border-0 bg-transparent p-0 fw-semibold {% if user in comment.likes.all %}text-danger{% else %}text-muted{% endif %}"
+          style="font-size:.78rem;cursor:pointer">
+          <i class="bi bi-heart{% if user in comment.likes.all %}-fill{% endif %}"></i>
+          <span class="like-comment-count">{% if comment.likes.count %}{{ comment.likes.count }}{% endif %}</span>
+        </button>
+      </form>
+      {% endif %}
+
+      {% if user == comment.author or user.is_admin %}
+      <form method="post" action="{% url 'social:delete_comment' comment.pk %}"
+            class="delete-comment-form" data-comment-id="{{ comment.pk }}">
+        {% csrf_token %}
+        <button type="submit" class="border-0 bg-transparent p-0 text-danger fw-semibold" style="font-size:.78rem;cursor:pointer">
+          Видалити
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</li>

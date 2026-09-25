@@ -1,0 +1,127 @@
+
+<script>
+(function () {
+  "use strict";
+
+  function csrf() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+  }
+
+  async function ajax(url, body) {
+    const opts = {
+      method: "POST",
+      headers: { "X-CSRFToken": csrf(), "X-Requested-With": "XMLHttpRequest" },
+    };
+    if (body) opts.body = body;
+    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(res.statusText);
+    return res.json();
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  document.addEventListener("submit", async function (e) {
+    const form = e.target;
+
+    // ── Лайк поста ────────────────────────────────────────────
+    if (form.classList.contains("like-form")) {
+      e.preventDefault();
+      try {
+        const data = await ajax(form.action);
+        const btn  = form.querySelector(".like-btn");
+        const icon = btn.querySelector("i");
+        btn.classList.toggle("liked", data.liked);
+        icon.className = data.liked ? "bi bi-heart-fill" : "bi bi-heart";
+
+        const counter = document.getElementById(`like-count-${form.dataset.postId}`);
+        if (counter) {
+          counter.textContent = data.count;
+          counter.closest("span").style.display = data.count ? "" : "none";
+        }
+      } catch { console.error("Помилка лайку"); }
+    }
+
+    // ── Лайк коментаря ────────────────────────────────────────
+    if (form.classList.contains("like-comment-form")) {
+      e.preventDefault();
+      try {
+        const data = await ajax(form.action);
+        const btn  = form.querySelector(".like-comment-btn");
+        const icon = btn.querySelector("i");
+        btn.classList.toggle("text-danger", data.liked);
+        btn.classList.toggle("text-muted",  !data.liked);
+        icon.className = data.liked ? "bi bi-heart-fill" : "bi bi-heart";
+        const cnt = btn.querySelector(".like-comment-count");
+        if (cnt) cnt.textContent = data.count || "";
+      } catch { console.error("Помилка лайку коментаря"); }
+    }
+
+    // ── Додати коментар ───────────────────────────────────────
+    if (form.classList.contains("comment-form")) {
+      e.preventDefault();
+      const input = form.querySelector("input[name='text']");
+      const text  = input?.value.trim();
+      if (!text) return;
+
+      try {
+        const data = await ajax(form.action, new FormData(form));
+        if (data.success) {
+          const postId = form.dataset.postId;
+          const list   = document.getElementById(`comments-list-${postId}`);
+          const noMsg  = document.getElementById(`no-comments-${postId}`);
+          if (noMsg) noMsg.remove();
+
+          const avatarSrc = data.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&size=32&background=6c63ff&color=fff`;
+
+          const li = document.createElement("li");
+          li.className = "comment-item";
+          li.id = `comment-${data.comment_id}`;
+          li.innerHTML = `
+            <img src="${esc(avatarSrc)}" class="rounded-circle flex-shrink-0" width="32" height="32" alt="">
+            <div class="flex-grow-1">
+              <div class="comment-bubble">
+                <span class="fw-semibold d-block" style="font-size:.83rem">${esc(data.author)}</span>
+                <p class="mb-0" style="font-size:.88rem">${esc(text)}</p>
+              </div>
+              <div class="d-flex gap-3 mt-1" style="padding-left:.2rem">
+                <span style="font-size:.72rem;color:var(--muted)">щойно</span>
+              </div>
+            </div>`;
+          list.appendChild(li);
+          if (input) input.value = "";
+        }
+      } catch { console.error("Помилка коментаря"); }
+    }
+
+    // ── Видалити коментар ─────────────────────────────────────
+    if (form.classList.contains("delete-comment-form")) {
+      e.preventDefault();
+      if (!confirm("Видалити коментар?")) return;
+      try {
+        const data = await ajax(form.action);
+        if (data.success) {
+          document.getElementById(`comment-${form.dataset.commentId}`)?.remove();
+        }
+      } catch { console.error("Помилка видалення"); }
+    }
+
+    // ── Поширити пост ─────────────────────────────────────────
+    if (form.classList.contains("share-form")) {
+      e.preventDefault();
+      try {
+        const data = await ajax(form.action);
+        const btn  = form.querySelector(".share-btn");
+        if (data.shared) {
+          btn.style.color = "var(--primary)";
+          btn.innerHTML   = '<i class="bi bi-share-fill"></i> Поширено';
+        }
+      } catch { console.error("Помилка поширення"); }
+    }
+  });
+})();
+</script>

@@ -1,0 +1,119 @@
+{#
+  Включити в base.html замість статичного дзвіночка:
+  {% include "notifications/navbar_bell.html" %}
+#}
+{% if user.is_authenticated %}
+<li class="nav-item dropdown">
+  <a class="nav-link position-relative" href="#" id="notifDropdown"
+     data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-bell fs-5"></i>
+    {% if unread_notifications_count %}
+      <span
+        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+        style="font-size:.6rem"
+        id="navbar-notif-badge"
+      >{{ unread_notifications_count }}</span>
+    {% endif %}
+  </a>
+
+  <div class="dropdown-menu dropdown-menu-end shadow" style="width:340px;max-height:420px;overflow-y:auto" id="notif-dropdown-menu">
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+      <span class="fw-semibold">Сповіщення</span>
+      <a href="{% url 'notifications:list' %}" class="small text-primary text-decoration-none">Всі</a>
+    </div>
+
+    <div id="notif-dropdown-body">
+      <div class="text-center text-muted py-3">
+        <div class="spinner-border spinner-border-sm"></div>
+      </div>
+    </div>
+
+    <div class="border-top text-center py-2">
+      <form method="post" action="{% url 'notifications:mark_all_read' %}" id="mark-all-form">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-link text-muted text-decoration-none">
+          <i class="bi bi-check2-all"></i> Позначити всі прочитаними
+        </button>
+      </form>
+    </div>
+  </div>
+</li>
+
+<script>
+(function () {
+  const dropdown = document.getElementById("notifDropdown");
+  const body     = document.getElementById("notif-dropdown-body");
+  const badge    = document.getElementById("navbar-notif-badge");
+  let loaded     = false;
+
+  const ICONS = {
+    friend_request:  "bi-person-plus text-primary",
+    friend_accepted: "bi-people-fill text-success",
+    new_follower:    "bi-bell-fill text-info",
+    comment:         "bi-chat-fill text-warning",
+    like:            "bi-heart-fill text-danger",
+    message:         "bi-envelope-fill text-primary",
+    moderation:      "bi-shield-fill text-danger",
+  };
+
+  dropdown.addEventListener("show.bs.dropdown", async () => {
+    if (loaded) return;
+    try {
+      const res  = await fetch("{% url 'notifications:dropdown' %}", {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const data = await res.json();
+      loaded = true;
+
+      if (!data.notifications.length) {
+        body.innerHTML = `<div class="text-center text-muted py-3 small">Сповіщень немає</div>`;
+        return;
+      }
+
+      body.innerHTML = data.notifications.map(n => `
+        <a href="${n.url}"
+           class="dropdown-item d-flex align-items-start gap-2 py-2 ${n.is_read ? "" : "fw-semibold bg-light"}"
+           data-notif-id="${n.id}">
+          <img
+            src="${n.actor_avatar || "https://ui-avatars.com/api/?name=" + encodeURIComponent(n.actor_name) + "&size=36"}"
+            class="rounded-circle flex-shrink-0" width="36" height="36" alt=""
+          >
+          <div class="overflow-hidden">
+            <div class="small text-wrap">${escHtml(n.text)}</div>
+            <div class="text-muted" style="font-size:.72rem">${n.created_at}</div>
+          </div>
+        </a>`).join("");
+
+      // Оновлюємо бейдж
+      if (data.unread_count === 0 && badge) badge.remove();
+      else if (badge) badge.textContent = data.unread_count;
+
+    } catch {
+      body.innerHTML = `<div class="text-center text-muted py-3 small">Помилка завантаження</div>`;
+    }
+  });
+
+  // Mark all read
+  document.getElementById("mark-all-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    await fetch(e.target.action, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+    document.querySelectorAll("[data-notif-id]").forEach(el => {
+      el.classList.remove("fw-semibold", "bg-light");
+    });
+    const b = document.getElementById("navbar-notif-badge");
+    if (b) b.remove();
+    loaded = false; // скинути кеш дропдауну
+  });
+
+  function escHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+})();
+</script>
+{% endif %}

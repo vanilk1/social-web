@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}СоцМережа{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary:    #6c63ff;
+      --primary-lt: #ede9ff;
+      --surface:    #ffffff;
+      --bg:         #f4f6fb;
+      --border:     #e8eaf0;
+      --text:       #1a1d2e;
+      --muted:      #8890a4;
+      --radius:     14px;
+      --shadow:     0 2px 12px rgba(108,99,255,.08);
+      --shadow-lg:  0 8px 32px rgba(108,99,255,.14);
+    }
+
+    * { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; padding-top: 68px; }
+
+    /* ── Навбар ─────────────────────────────────────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1030;
+      height: 64px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 1.25rem; gap: 1rem;
+      box-shadow: 0 1px 8px rgba(0,0,0,.06);
+    }
+    .topbar-brand {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: -1px;
+      background: linear-gradient(135deg, var(--primary), #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none; white-space: nowrap;
+    }
+    .topbar-search {
+      position: relative; flex: 0 1 260px;
+    }
+    .topbar-search input {
+      width: 100%; padding: .5rem 1rem .5rem 2.4rem;
+      border: 2px solid var(--border); border-radius: 2rem;
+      background: var(--bg); font-size: .88rem; outline: none;
+      transition: border-color .2s, width .2s;
+    }
+    .topbar-search input:focus { border-color: var(--primary); background: #fff; }
+    .topbar-search .bi { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
+
+    /* Центральні іконки */
+    .topbar-nav { display: flex; gap: .25rem; margin: 0 auto; }
+    .tnav-link {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 76px; height: 44px; border-radius: 10px;
+      color: var(--muted); text-decoration: none; font-size: 1.25rem;
+      position: relative; transition: background .15s, color .15s;
+    }
+    .tnav-link:hover { background: var(--primary-lt); color: var(--primary); }
+    .tnav-link.active { color: var(--primary); box-shadow: inset 0 -3px 0 var(--primary); border-radius: 10px 10px 0 0; }
+    .tnav-link .lbl { font-size: .6rem; font-weight: 600; margin-top: 1px; letter-spacing: .3px; }
+
+    /* Права частина */
+    .topbar-right { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+    .tbtn {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: var(--bg); color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; cursor: pointer; position: relative;
+      transition: background .15s;
+      text-decoration: none;
+    }
+    .tbtn:hover { background: var(--primary-lt); color: var(--primary); }
+    .tbadge {
+      position: absolute; top: -1px; right: -1px;
+      background: #ef4444; color: #fff; font-size: .58rem; font-weight: 700;
+      min-width: 17px; height: 17px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3px; border: 2px solid #fff;
+    }
+    .nav-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--border); }
+
+    /* Dropdown */
+    .dropdown-menu {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); padding: .5rem; min-width: 280px;
+    }
+    .drop-user { padding: .75rem; border-radius: 10px; background: var(--bg); margin-bottom: .25rem; }
+    .dropdown-item { border-radius: 8px; padding: .55rem .75rem; font-size: .9rem; display: flex; align-items: center; gap: .65rem; }
+    .dropdown-item:hover { background: var(--primary-lt); color: var(--primary); }
+    .drop-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+
+    /* ── Картки ─────────────────────────────────────────────────── */
+    .card { border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card-header { border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0 !important; background: var(--surface); }
+
+    /* ── Кнопки ─────────────────────────────────────────────────── */
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: #5a52e0; border-color: #5a52e0; }
+    .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+    .btn-outline-primary:hover { background: var(--primary); border-color: var(--primary); }
+
+    /* ── Профіль ────────────────────────────────────────────────── */
+    .cover-photo { width: 100%; height: 240px; object-fit: cover; border-radius: var(--radius) var(--radius) 0 0; background: linear-gradient(135deg, var(--primary), #a78bfa); }
+    .avatar-lg { width: 110px; height: 110px; object-fit: cover; border: 4px solid #fff; border-radius: 50%; margin-top: -55px; box-shadow: var(--shadow); }
+
+    /* ── Flash ──────────────────────────────────────────────────── */
+    .alert { border-radius: var(--radius); border: none; }
+    .alert-success { background: #d1fae5; color: #065f46; }
+    .alert-danger  { background: #fee2e2; color: #991b1b; }
+    .alert-info    { background: var(--primary-lt); color: var(--primary); }
+
+    /* ── Нижнє мобільне меню ────────────────────────────────────── */
+    .bottombar {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;
+      height: 58px; background: var(--surface); border-top: 1px solid var(--border);
+      justify-content: space-around; align-items: center;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.06);
+    }
+    @media (max-width: 991px) {
+      .bottombar { display: flex; }
+      body { padding-bottom: 66px; }
+      .topbar-nav { display: none !important; }
+      .topbar-search { flex: 0 1 180px; }
+    }
+
+    /* ── Форма публікації ───────────────────────────────────────── */
+    .post-compose { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 1rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+    .post-compose textarea { border: none; background: var(--bg); border-radius: 10px; resize: none; width: 100%; padding: .75rem 1rem; font-size: .95rem; outline: none; }
+    .post-compose textarea:focus { background: #eef0fb; }
+
+    /* ── Пост ───────────────────────────────────────────────────── */
+    .post-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 1rem; box-shadow: var(--shadow); overflow: hidden; }
+    .post-card .post-header { padding: 1rem 1rem .5rem; }
+    .post-card .post-body { padding: .25rem 1rem .75rem; }
+    .post-card .post-img { width: 100%; max-height: 480px; object-fit: cover; }
+    .post-actions { border-top: 1px solid var(--border); display: flex; }
+    .post-action-btn {
+      flex: 1; border: none; background: none; padding: .6rem;
+      font-size: .88rem; font-weight: 600; color: var(--muted);
+      display: flex; align-items: center; justify-content: center; gap: .4rem;
+      border-radius: 0; cursor: pointer; transition: background .15s, color .15s;
+    }
+    .post-action-btn:hover { background: var(--bg); color: var(--primary); }
+    .post-action-btn.liked { color: #ef4444; }
+    .post-action-btn.commented { color: var(--primary); }
+
+    /* ── Коментарі ──────────────────────────────────────────────── */
+    .comments-section { background: var(--bg); padding: .75rem 1rem; }
+    .comment-item { display: flex; gap: .65rem; margin-bottom: .65rem; }
+    .comment-bubble { background: var(--surface); border-radius: 14px; padding: .5rem .85rem; flex: 1; border: 1px solid var(--border); }
+    .comment-input-row { display: flex; gap: .5rem; align-items: center; }
+    .comment-input-row input {
+      flex: 1; border: 2px solid var(--border); border-radius: 2rem;
+      padding: .45rem 1rem; font-size: .88rem; outline: none; background: var(--surface);
+    }
+    .comment-input-row input:focus { border-color: var(--primary); }
+    .comment-send-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      flex-shrink: 0; transition: background .15s;
+    }
+    .comment-send-btn:hover { background: #5a52e0; }
+
+    /* ── Сайдбар ─────────────────────────────────────────────────── */
+    .sidebar-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 1rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+    .sidebar-card h6 { font-weight: 700; color: var(--text); margin-bottom: .75rem; }
+    .friend-item { display: flex; align-items: center; gap: .65rem; padding: .4rem 0; }
+    .friend-item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+    .online-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid #fff; margin-left: auto; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<header class="topbar">
+  <a href="/" class="topbar-brand">СМ</a>
+
+  <div class="topbar-search d-none d-sm-block">
+    <i class="bi bi-search"></i>
+    <input type="text" placeholder="Пошук людей, груп...">
+  </div>
+
+  {% if user.is_authenticated %}
+  <nav class="topbar-nav">
+    <a href="/" class="tnav-link {% if request.path == '/' %}active{% endif %}">
+      <i class="bi bi-house-door{% if request.path == '/' %}-fill{% endif %}"></i>
+      <span class="lbl">Стрічка</span>
+    </a>
+    <a href="/chat/" class="tnav-link {% if '/chat/' in request.path %}active{% endif %}">
+      <i class="bi bi-chat-dots{% if '/chat/' in request.path %}-fill{% endif %}"></i>
+      <span class="lbl">Чат</span>
+    </a>
+    <a href="/groups/" class="tnav-link {% if '/groups/' in request.path %}active{% endif %}">
+      <i class="bi bi-people{% if '/groups/' in request.path %}-fill{% endif %}"></i>
+      <span class="lbl">Групи</span>
+    </a>
+    <a href="/notifications/" class="tnav-link {% if '/notifications/' in request.path %}active{% endif %}" style="position:relative">
+      <i class="bi bi-bell{% if '/notifications/' in request.path %}-fill{% endif %}"></i>
+      {% if unread_notifications_count %}<span class="tbadge">{{ unread_notifications_count }}</span>{% endif %}
+      <span class="lbl">Сповіщення</span>
+    </a>
+  </nav>
+  {% endif %}
+
+  <div class="topbar-right">
+    {% if user.is_authenticated %}
+      <div class="dropdown">
+        <img
+          src="{% if user.avatar %}{{ user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=38&background=6c63ff&color=fff{% endif %}"
+          class="nav-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
+          alt="{{ user.username }}"
+        >
+        <ul class="dropdown-menu dropdown-menu-end mt-2">
+          <li>
+            <a href="{% url 'accounts:profile' user.pk %}" class="drop-user d-flex align-items-center gap-3 text-decoration-none text-dark d-block">
+              <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=52&background=6c63ff&color=fff{% endif %}"
+                class="rounded-circle flex-shrink-0" width="52" height="52" alt="">
+              <div>
+                <div class="fw-semibold" style="font-size:.95rem">{{ user.get_full_name|default:user.username }}</div>
+                <div style="font-size:.78rem;color:var(--muted)">Переглянути профіль</div>
+              </div>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider my-1"></li>
+          <li><a class="dropdown-item" href="{% url 'accounts:profile_edit' %}">
+            <span class="drop-icon"><i class="bi bi-pencil-fill"></i></span> Редагувати профіль
+          </a></li>
+          <li><a class="dropdown-item" href="/notifications/settings/">
+            <span class="drop-icon"><i class="bi bi-bell-fill"></i></span> Сповіщення
+          </a></li>
+          {% if user.is_admin %}
+          <li><a class="dropdown-item text-danger" href="/admin/">
+            <span class="drop-icon" style="background:#fee2e2"><i class="bi bi-shield-fill text-danger"></i></span> Адмін-панель
+          </a></li>
+          {% endif %}
+          <li><hr class="dropdown-divider my-1"></li>
+          <li>
+            <form method="post" action="{% url 'auth:logout' %}">
+              {% csrf_token %}
+              <button class="dropdown-item text-danger w-100 text-start" type="submit">
+                <span class="drop-icon" style="background:#fee2e2"><i class="bi bi-box-arrow-right text-danger"></i></span>
+                Вийти
+              </button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    {% else %}
+      <a href="{% url 'auth:login' %}" class="btn btn-outline-primary btn-sm px-3">Увійти</a>
+      <a href="{% url 'auth:register' %}" class="btn btn-primary btn-sm px-3">Реєстрація</a>
+    {% endif %}
+  </div>
+</header>
+
+{% if messages %}
+<div class="container mt-2">
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main class="container py-3">
+  {% block content %}{% endblock %}
+</main>
+
+{% if user.is_authenticated %}
+<nav class="bottombar">
+  <a href="/" class="tnav-link {% if request.path == '/' %}active{% endif %}">
+    <i class="bi bi-house-door{% if request.path == '/' %}-fill{% endif %}"></i>
+    <span class="lbl">Стрічка</span>
+  </a>
+  <a href="/chat/" class="tnav-link {% if '/chat/' in request.path %}active{% endif %}">
+    <i class="bi bi-chat-dots{% if '/chat/' in request.path %}-fill{% endif %}"></i>
+    <span class="lbl">Чат</span>
+  </a>
+  <a href="/groups/" class="tnav-link {% if '/groups/' in request.path %}active{% endif %}">
+    <i class="bi bi-people{% if '/groups/' in request.path %}-fill{% endif %}"></i>
+    <span class="lbl">Групи</span>
+  </a>
+  <a href="/notifications/" class="tnav-link" style="position:relative">
+    <i class="bi bi-bell{% if '/notifications/' in request.path %}-fill{% endif %}"></i>
+    {% if unread_notifications_count %}<span class="tbadge">{{ unread_notifications_count }}</span>{% endif %}
+    <span class="lbl">Сповіщення</span>
+  </a>
+  <a href="{% url 'accounts:profile' user.pk %}" class="tnav-link">
+    <i class="bi bi-person{% if '/profile/' in request.path %}-fill{% endif %}"></i>
+    <span class="lbl">Профіль</span>
+  </a>
+</nav>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% include "social/social_js.html" %}
+{% block extra_js %}{% endblock %}
+</body>
+</html>

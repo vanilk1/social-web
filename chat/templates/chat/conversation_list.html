@@ -1,0 +1,113 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block title %}Повідомлення{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chat-sidebar { height: calc(100vh - 80px); overflow-y: auto; }
+  .conv-item { cursor: pointer; transition: background .15s; }
+  .conv-item:hover, .conv-item.active { background: #e9f0ff; }
+  .conv-avatar { width: 48px; height: 48px; object-fit: cover; flex-shrink: 0; }
+  .conv-preview { font-size: .82rem; color: #6c757d;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  .unread-badge { font-size: .7rem; min-width: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-0" style="height:calc(100vh - 90px)">
+
+  <div class="col-md-4 col-lg-3 border-end bg-white chat-sidebar">
+
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+      <h6 class="mb-0 fw-bold">Повідомлення</h6>
+      <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newGroupModal">
+        <i class="bi bi-people-fill"></i>
+      </button>
+    </div>
+
+    {% for item in conv_data %}
+      {% with conv=item.conv other=item.other unread=item.unread %}
+        <a
+          href="{% url 'chat:detail' conv.pk %}"
+          class="d-flex align-items-center gap-3 px-3 py-2 text-decoration-none text-dark conv-item border-bottom"
+        >
+
+          {% if conv.is_group %}
+            <div class="conv-avatar rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold fs-5">
+              {{ conv.title|first|upper }}
+            </div>
+          {% else %}
+            <img
+              src="{% if other.avatar %}{{ other.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ other.username }}&size=48{% endif %}"
+              class="conv-avatar rounded-circle"
+              alt="{{ other.username }}"
+            >
+          {% endif %}
+
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold small">
+                {% if conv.is_group %}{{ conv.title }}{% else %}{{ other.get_full_name|default:other.username }}{% endif %}
+              </span>
+              <span class="text-muted" style="font-size:.72rem">
+                {% if conv.last_time %}{{ conv.last_time|date:"H:i" }}{% endif %}
+              </span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <span class="conv-preview">{{ conv.last_text|default:"Немає повідомлень" }}</span>
+              {% if unread %}
+                <span class="badge bg-primary rounded-pill unread-badge">{{ unread }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      {% endwith %}
+    {% empty %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-chat-dots fs-2"></i>
+        <p class="mt-2 small">Розмов ще немає</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="col-md-8 col-lg-9 d-flex align-items-center justify-content-center bg-light text-muted">
+    <div class="text-center">
+      <i class="bi bi-chat-heart fs-1"></i>
+      <p class="mt-2">Оберіть розмову зліва</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal fade" id="newGroupModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Новий груповий чат</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'chat:new_group' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Назва чату</label>
+            <input type="text" name="title" class="form-control" placeholder="Назва групи" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Учасники</label>
+            <select name="user_ids" class="form-select" multiple size="6">
+
+            </select>
+            <div class="form-text">Ctrl+Click для вибору кількох</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary w-100">Створити</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
